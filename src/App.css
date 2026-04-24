@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+:root {
+  --color-primary: #FFBF00;
+}
+
+.main-app {
+  width: 100vw;
+  height: 100vh;
+  margin: auto;
+}
+
+.app-background {
+  background-color: #fffefa; /* Bardzo jasna kremowa żółć */
+  background-image: 
+    /* Główne linie poziome kratki */
+    linear-gradient(rgba(251, 248, 232, 0.4) 1px, transparent 1px),
+    /* Główne linie pionowe kratki */
+    linear-gradient(90deg, rgba(251, 248, 232, 0.4) 1px, transparent 1px),
+    /* Subtelne linie pomocnicze (mniejsza gęstość) */
+    linear-gradient(rgba(253, 251, 240, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(253, 251, 240, 0.2) 1px, transparent 1px);
+  
+  background-size: 
+    40px 40px,      /* Główne kratki 40x40px */
+    40px 40px,      /* Główne pionowe */
+    20px 20px,      /* Pomocnicze 20x20px */
+    20px 20px;      /* Pomocnicze pionowe */
+  
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Animacja migania dla efektu "żywej" kratki */
+@keyframes grid-twinkle {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Responsywność dla mniejszych ekranów */
+@media (max-width: 768px) {
+  .app-background {
+    background-size: 
+      30px 30px,
+      30px 30px,
+      15px 15px,
+      15px 15px;
+  }
+}

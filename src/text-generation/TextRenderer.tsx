@@ -1,6 +1,7 @@
 import React from 'react';
+import { type JsonResponse, type ParsedContent, type Section, parseApiResponse } from '../utils/parseApiResponse';
 
-// Typy dla struktury danych
+// Types
 interface TextContent {
   plain?: string;
   marker?: string;
@@ -14,28 +15,8 @@ interface ListItem {
   plain?: string;
 }
 
-interface Section {
-  header?: string;
-  subheader?: string;
-  text?: TextContent[];
-  list?: (string | ListItem)[];
-  footnote?: string;
-}
-
-interface JsonResponse {
-  choices: {
-    message: {
-      content: string;
-    };
-  }[];
-}
-
-interface ParsedContent {
-  sections: Section[];
-}
-
-// Komponent renderujący pojedynczy element text
-const TextElement: React.FC<{ content: TextContent }> = ({ content }) => {
+// A component that renders a single text element
+export const TextElement: React.FC<{ content: TextContent }> = ({ content }) => {
   const elements: React.ReactNode[] = [];
 
   if (content.plain) {
@@ -61,8 +42,8 @@ const TextElement: React.FC<{ content: TextContent }> = ({ content }) => {
   return <>{elements}</>;
 };
 
-// Komponent renderujący linię text (array TextContent)
-const TextLine: React.FC<{ line: TextContent[] }> = ({ line }) => (
+// The component that renders a text line (TextContent array)
+export const TextLine: React.FC<{ line: TextContent[] }> = ({ line }) => (
   <p className="mb-4 leading-relaxed">
     {line.map((content, index) => (
       <TextElement key={index} content={content} />
@@ -70,7 +51,7 @@ const TextLine: React.FC<{ line: TextContent[] }> = ({ line }) => (
   </p>
 );
 
-// Komponent renderujący element listy
+// The component that renders the list item
 const ListItemElement: React.FC<{ item: string | ListItem }> = ({ item }) => {
   if (typeof item === 'string') {
     return <li className="mb-2">{item}</li>;
@@ -80,7 +61,7 @@ const ListItemElement: React.FC<{ item: string | ListItem }> = ({ item }) => {
     return (
       <li className="mb-2">
         <span className="flex items-start">
-        <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
+        <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 shrink-0"></span>
           <TextLine line={item.text} />
         </span>
       </li>
@@ -90,7 +71,7 @@ const ListItemElement: React.FC<{ item: string | ListItem }> = ({ item }) => {
   return null;
 };
 
-// Komponent renderujący sekcję
+// The component that renders the section
 const SectionComponent: React.FC<{ section: Section }> = ({ section }) => (
   <div className="mb-12">
     {section.header && (
@@ -114,7 +95,7 @@ const SectionComponent: React.FC<{ section: Section }> = ({ section }) => (
     </div>
     
     {section.list && section.list.length > 0 && (
-  <ul className="space-y-2 ml-6">
+  <ul className="space-y-2 ml-6 list">
     {section.list.map((item, index) => (
       <ListItemElement key={`list-${index}`} item={item} />
     ))}
@@ -131,33 +112,15 @@ const SectionComponent: React.FC<{ section: Section }> = ({ section }) => (
   </div>
 );
 
-// Główny komponent parsera JSON
+// The main component of the JSON parser
 const JsonContentParser = React.memo(({ jsonData }: { jsonData: JsonResponse }) => {
   const [parsedContent, setParsedContent] = React.useState<ParsedContent | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     try {
-      const messageContent = jsonData.choices[0]?.message.content;
-      if (!messageContent) {
-        throw new Error('No message content found');
-      }
-
-      // Extract JSON string: cut from first '{' to last '}' , removing ```json prefixes
-      const firstBrace = messageContent.indexOf('{');
-      const lastBrace = messageContent.lastIndexOf('}');
-      let jsonString = messageContent.slice(firstBrace, lastBrace + 1);
-      
-      // Clean up common prefixes like ```json
-      jsonString = jsonString.replace(/^```json\s*/g, '').replace(/\s*```$/g, '').trim();
-      
-      const parsedJson = JSON.parse(jsonString);
-      
-      if (parsedJson.sections) {
-        setParsedContent({ sections: parsedJson.sections });
-      } else {
-        throw new Error('No sections found in JSON');
-      }
+      const result = parseApiResponse(jsonData);
+      setParsedContent(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Parsing error');
     }

@@ -46,3 +46,12 @@ export interface Section {
   footnote?: string;
 }
 
+export interface UserFile {
+  id: string;
+  user_id: string;
+  filename: string;
+  storage_path: string;
+  file_type: string;
+  created_at: string;
+}
+

@@ -37,10 +37,6 @@ export const useTesseract = () => {
     }
   }, [getWorker]);
 
-  useEffect(() => () => {
-    // Don't terminate shared worker on unmount for concurrency
-  }, []);
-
   return { recognize, status };
 };
 

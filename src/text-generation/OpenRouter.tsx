@@ -38,3 +38,44 @@ export default async function sendPromptToOpenRouter(prompt: string) {
   const data = await response.json();
   return data;
 }
+
+export async function sendToDoPrompt(prompt: string) {
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "Missing VITE_OPENROUTER_API_KEY environment variable. " +
+      "Please add it to your .env file (e.g. VITE_OPENROUTER_API_KEY=sk-or-v1-...)"
+    );
+  }
+  const url = "https://openrouter.ai/api/v1/chat/completions";
+  const headers = {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json"
+  };
+  const payload = {
+    "model": "inclusionai/ling-2.6-flash:free",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an assistant that receives a user-provided manual (text extracted from PDF/PNG/plain text). Produce a JSON-formatted to-do list only (no surrounding prose) that follows the exact schema and formatting rules below so the frontend can parse it reliably.\n\nOutput rules\n- Respond only with valid JSON. No extra text, explanation, or markdown.\n- Top-level object contains an array named \"sections\".\n- Each item in \"sections\" is an object that must use the following structure:\n  {\"text\": [ ... ]}\n  where the array contains text span objects in order.\n- You may use the following text span styles: plain, marker, bold, italic, underline. Each span is an object with a single key and string value.\n- All string values must be plain UTF-8 strings (no HTML, no Markdown).\n- Do not include any additional properties, metadata, or processing instructions.\n- Use gentle, friendly language (e.g., \"Please\", \"We recommend\", \"Quick tip\").\n\nContent rules\n- Produce 8–12 to-do items covering important post-purchase tasks: unboxing, inspection, registering product/warranty, charging/initial setup, safety checks, reading quick start, connecting to network (if applicable), first-run test, configuring preferences, creating backups, and storing documentation.\n- Mark critical safety warnings or actions that must not be skipped with \"marker\".\n- Emphasize important terms (e.g., warranty, serial number) with \"bold\".\n- Use \"italic\" for optional tips or examples and \"underline\" for filenames or part numbers when referenced.\n- Keep each to-do item concise (1–2 short sentences).\n- If a step includes multiple styled spans, use an array of text span objects in order.\n- Do not output empty items or nulls.\n\nError handling\n- If the provided manual text indicates the product is hazardous (contains words like \"danger\", \"hazard\", \"toxic\" in any case), include an early section with a \"marker\" warning: \"Contact support and follow emergency instructions immediately.\"\n- If the product appears to require batteries (words like \"battery\", \"AA\", \"AAA\"), include a step reminding to insert or charge batteries.\n\nExample output (must be followed exactly for structure):\n{\n  \"sections\": [\n    {\n      \"text\": [\n        {\"plain\": \"Unpack and check all parts.\"}\n      ]\n    },\n    {\n      \"text\": [\n        {\"plain\": \"Register your product at \"},\n        {\"underline\": \"example.com/register\"},\n        {\"plain\": \" using the \"},\n        {\"bold\": \"serial number\"}\n      ]\n    }\n  ]\n}\n\nTask: Given the manual text below, produce the JSON to-do list following these rules. Always output only JSON. Do not write any notes like 'JSON ```{...}```', output clear, one-line JSON only!"
+      },
+      {
+        "role": "user",
+        "content": prompt
+      }
+    ]
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data;
+}

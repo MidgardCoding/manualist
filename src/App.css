@@ -11,6 +11,10 @@
   margin: auto;
 }
 
+li {
+  color: black;
+}
+
 .app-background {
   background-color: #fffefa; /* Bardzo jasna kremowa żółć */
   background-image: 

@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage';
 import { supabase } from './utils/supabase';
 import './App.css';
 import type { Step } from './types';
+import ChatDock from './components/ChatDock';
 
 function Navbar({ onLogout }: { onLogout: () => void }) {
   const { fullReset } = useAppStore();
@@ -59,6 +60,7 @@ function MainApp() {
 
   return (
     <>
+      <ChatDock />
       <Navbar onLogout={handleLogout} />
       <MainWorkflow />
     </>

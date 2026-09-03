@@ -14,8 +14,8 @@ export default {
       {
         manualist: {
           ...require("daisyui/theming/presets/light.json"),
-          "primary": "#3b82f6",
-          "secondary": "#10b981",
+          "primary": "##FBBF24",
+          "secondary": "#F87060",
           "accent": "#f59e0b",
           "neutral": "#6b7280",
           "base-100": "#ffffff",

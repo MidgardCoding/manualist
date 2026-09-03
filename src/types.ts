@@ -14,6 +14,8 @@ export interface AppState {
   inputMode?: InputMode;
   files: File[];
   apiResponse: any | null;
+  todoResponse: any | null;
+  activeManualId: string | null;
   uploadStatus: UploadStatus;
   ocrStatus: UploadStatus;
   apiStatus: ApiStatus;
@@ -25,9 +27,12 @@ export interface AppState {
   setStep: (step: Step) => void;
   setFiles: (files: File[]) => void;
   setApiResponse: (response: any) => void;
+  setTodoResponse: (response: any) => void;
+  setActiveManualId: (id: string | null) => void;
   setUploadStatus: (status: UploadStatus) => void;
   setOcrStatus: (status: UploadStatus) => void;
   setApiStatus: (status: ApiStatus) => void;
+  loadManual: (manual: { id: string; extracted_text: string | null; api_response: any; todo_response: any; input_mode: InputMode | null }) => void;
 }
 
 export interface TextContent {

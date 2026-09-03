@@ -5,10 +5,12 @@ import MainWorkflow from './components/MainWorkflow';
 import Register from './pages/register';
 import Login from './pages/login';
 import LandingPage from './pages/LandingPage';
+import ArchivePage from './pages/ArchivePage';
 import { supabase } from './utils/supabase';
 import './App.css';
 import type { Step } from './types';
-import ChatDock from './components/ChatDock';
+import Background from './components/Background';
+import { RotateCcw } from 'lucide-react';
 
 function Navbar({ onLogout }: { onLogout: () => void }) {
   const { fullReset } = useAppStore();
@@ -20,7 +22,7 @@ function Navbar({ onLogout }: { onLogout: () => void }) {
 
   return (
     <>
-      <div className="navbar bg-base-200 rounded border border-gray-200 shadow-xl sticky top-0 z-50 m-10 mx-auto w-[90%]">
+      <div className="navbar rounded bg-base-200 border border-gray-200 shadow-xl sticky top-6 z-51 w-auto mx-6">
         <div className="flex-1">
           <Link to="/app" onClick={fullReset} className="btn btn-ghost normal-case text-2xl font-bold">
             Manualist
@@ -53,17 +55,43 @@ function Navbar({ onLogout }: { onLogout: () => void }) {
 }
 
 function MainApp() {
+  const { activeManualId, apiResponse, fullReset, setActiveManualId, setStep } = useAppStore();
+  const isViewingManual = !!activeManualId && !!apiResponse;
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
   };
 
+  const handleBackToArchive = () => {
+    setActiveManualId(null);
+    setStep('select');
+    fullReset();
+  };
+
   return (
-    <>
-      <ChatDock />
+    <Background>
       <Navbar onLogout={handleLogout} />
-      <MainWorkflow />
-    </>
+      {isViewingManual ? (
+        <>
+          <div className="relative">
+            <div className="absolute top-10 left-6 z-10">
+              <button className="btn btn-sm btn-ghost bg-base-200 border border-base-300 w-80" onClick={handleBackToArchive}>
+                ← Back to Archive
+              </button>
+            </div>
+            <div className="absolute top-10 right-6 z-10">
+              <button className="btn btn-sm btn-ghost bg-base-200 border border-base-300 w-80" onClick={handleBackToArchive}>
+                <p className='flex row'><RotateCcw className='w-4'/><span className='p-1'>Retry</span></p>
+              </button>
+            </div>
+            <MainWorkflow />
+          </div>
+        </>
+      ) : (
+        <ArchivePage />
+      )}
+    </Background>
   );
 }
 

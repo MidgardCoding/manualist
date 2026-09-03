@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabase';
+import Background from '../components/Background';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -29,11 +30,11 @@ export default function Login() {
   };
 
   return (
-    <main>
-      <div className="mt-[10%]">
+    <Background>
+      <div className="flex min-h-screen items-center justify-center">
         <form
           onSubmit={handleSubmit}
-          className="fieldset bg-gray-100 border-base-300 rounded-box w-xs border p-4 mx-auto"
+          className="fieldset bg-base-200 border-gray-300 rounded-box w-xs border p-4 mx-auto"
         >
           <p className="text-2xl text-center font-bold">Login</p>
 
@@ -85,7 +86,7 @@ export default function Login() {
           </p>
         </form>
       </div>
-    </main>
+    </Background>
   );
 }
 

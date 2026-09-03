@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createWorker, type RecognizeResult, type Worker } from 'tesseract.js';
 import type { UploadStatus } from '../types';
 

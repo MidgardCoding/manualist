@@ -1,5 +1,5 @@
 import React from 'react';
-import { type JsonResponse, type ParsedContent, type Section, parseApiResponse } from '../utils/parseApiResponse';
+import { type JsonResponse, type ParsedContent, type Section, parseApiResponse, getSectionId } from '../utils/parseApiResponse';
 
 // Types
 interface TextContent {
@@ -72,10 +72,10 @@ const ListItemElement: React.FC<{ item: string | ListItem }> = ({ item }) => {
 };
 
 // The component that renders the section
-const SectionComponent: React.FC<{ section: Section }> = ({ section }) => (
-  <div className="mb-12">
+const SectionComponent: React.FC<{ section: Section; sectionId: string }> = ({ section, sectionId }) => (
+  <div id={sectionId} className="mb-12 scroll-mt-6">
     {section.header && (
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+      <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
         {section.header}
       </h1>
     )}
@@ -143,11 +143,12 @@ const JsonContentParser = React.memo(({ jsonData }: { jsonData: JsonResponse }) 
   }
 
   return (
-    <div className="container mx-auto px-6 py-12 max-w-4xl">
+    <div className="container mx-auto px-6 py-3 max-w-4xl">
       <div className="prose prose-headings:font-bold prose-p:leading-relaxed prose-a:text-black max-w-none">
         {parsedContent.sections.map((section, index) => (
-          <SectionComponent key={`section-${index}`} section={section} />
+          <SectionComponent key={`section-${index}`} section={section} sectionId={getSectionId(section.header, index)} />
         ))}
+        <p className='text-mauve-400 text-xs font-extralight text-center pt-6'>AI can make mistakes, so please check the result by comparing it with the official documentation.</p>
       </div>
     </div>
   );

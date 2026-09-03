@@ -7,9 +7,10 @@ import JsonContentParser from '../text-generation/TextRenderer';
 import TableOfContents from './TableOfContents';
 import ToDoSteps from './ToDoSteps';
 import useDatabase from '../hooks/useDatabase';
+import ChatDock from './ChatDock';
 
 export default function MainWorkflow() {
-  const { currentStep, inputMode, extractedText, apiResponse, ocrStatus, apiStatus, setStep, setInputMode, setOcrStatus, setApiStatus, reset, setExtractedText, setConfidence, setApiResponse, setFiles } = useAppStore();
+  const { currentStep, inputMode, extractedText, apiResponse, activeManualId, ocrStatus, apiStatus, setStep, setInputMode, setOcrStatus, setApiStatus, reset, setExtractedText, setConfidence, setApiResponse, setFiles } = useAppStore();
   const { uploadFile } = useDatabase();
 
   const [localFiles, setLocalFiles] = useState<File[]>([]);
@@ -26,7 +27,7 @@ export default function MainWorkflow() {
       setLocalApiError('');
 
       for (const file of newFiles) {
-        await uploadFile(file);
+        await uploadFile(file, activeManualId ?? undefined);
       }
     }
   };
@@ -52,28 +53,38 @@ export default function MainWorkflow() {
   }, [localFiles, recognize, setExtractedText, setConfidence, setOcrStatus, reset, setStep]);
 
   const handlePdfExtract = useCallback(async () => {
-    if (localFiles.length !== 1 || localFiles[0].type !== 'application/pdf') {
+    if (localFiles.length === 0) {
       setPdfStatus('error');
       return;
     }
     const file = localFiles[0];
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfStatus('error');
+      return;
+    }
+    reset();
     setPdfStatus('processing');
     try {
       const buffer = await file.arrayBuffer();
+      if (!buffer || buffer.byteLength === 0) throw new Error('Empty file');
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
       const { text } = await extractText(pdf, { mergePages: true });
-      setExtractedText(text);
+      const cleaned = (text || '').trim();
+      if (!cleaned) throw new Error('No text extracted from PDF');
+      setExtractedText(cleaned);
       setPdfStatus('success');
       setStep('generate');
     } catch (err) {
       console.error('PDF extract error', err);
       setPdfStatus('error');
     }
-  }, [localFiles, setExtractedText, setStep]);
+  }, [localFiles, setExtractedText, setStep, reset]);
 
   const handlePlainTextSubmit = () => {
-    if (!plainText.trim()) return;
-    setExtractedText(plainText);
+    const cleaned = plainText.trim();
+    if (!cleaned) return;
+    reset();
+    setExtractedText(cleaned);
     setStep('generate');
   };
 
@@ -97,9 +108,9 @@ export default function MainWorkflow() {
   }, [extractedText, setApiResponse, setApiStatus]);
 
   const StepContainer = ({ children }: { children: React.ReactNode }) => (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full flex min-h-dvh items-center justify-center">
       <div className='my-auto'>
-        <div className="card w-full max-w-2xl shadow-xl border-t-4 border-warning">
+        <div className="card w-full max-w-2xl shadow-xl border-t-4 border-warning bg-base-200 mb-30">
           <div className="card-body">{children}</div>
         </div>
       </div>
@@ -247,7 +258,7 @@ export default function MainWorkflow() {
               <h1 className="text-3xl font-bold mb-6">✏️ Enter your text</h1>
               <textarea 
                 className="textarea textarea-bordered textarea-warning w-full h-64 mb-4" 
-                placeholder="Wklej tutaj tekst instrukcji..."
+                placeholder="Paste the text of your user manual here..."
                 value={plainText}
                 onChange={(e) => setPlainText(e.target.value)}
               ></textarea>
@@ -311,25 +322,26 @@ export default function MainWorkflow() {
 
     case 'render':
       return (
-        <div className="min-h-screen flex">
-          <aside className="w-80 h-screen sticky top-0 overflow-y-auto border-r border-base-300 bg-base-100 p-4 shrink-0">
+        <div className="h-screen flex min-h-screen items-center justify-center">
+          <aside className="w-80 h-[80vh] sticky top-30 left-6 rounded-lg overflow-y-auto border border-gray-200 bg-base-200 p-4 shrink-0 shadow-2xl">
             <h2 className="text-xl font-bold mb-4">Table of Contents</h2>
             {apiResponse ? <TableOfContents apiResponse={apiResponse} /> : <p className="text-sm opacity-60">No data available</p>}
           </aside>
           <main className="flex-1 p-6 flex flex-col items-center">
             <h1 className="text-3xl font-bold mb-8">📖 Quick Summary</h1>
-            <div className="w-full max-w-3xl h-[60vh] overflow-y-auto px-12 shadow-2xl rounded-lg border-4 border-warning prose prose-lg">
+            <div className="w-full max-w-3xl h-[60vh] overflow-y-auto shadow-2xl rounded-lg bg-white/90 backdrop-blur-md border border-[#ded3b6] prose prose-lg mb-30 p-10">
               {apiResponse ? <JsonContentParser jsonData={apiResponse} /> : <p className="m-auto text-warning">We have no information to show</p>}
             </div>
           </main>
-          <aside className="w-80 h-screen sticky top-0 overflow-y-auto border-l border-base-300 bg-base-100 p-4 shrink-0">
+          <aside className="w-80 h-[80vh] sticky top-30 right-6 rounded-lg overflow-y-auto border border-gray-200 bg-base-200 p-4 shrink-0 shadow-2xl">
             <h2 className="text-xl font-bold mb-4">To-Do Steps</h2>
-            <ToDoSteps />
+            <ToDoSteps manualId={activeManualId} />
           </aside>
+          <ChatDock />
         </div>
       );
 
     default:
-      return <div>Unknown step</div>;
+      return <div className='flex min-h-screen items-center justify-center'>Unknown step</div>;
   }
 }

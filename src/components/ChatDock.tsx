@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { parseApiResponse } from '../utils/parseApiResponse';
 import { supabase } from '../utils/supabase';
+import useCredits from '../hooks/useCredits';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; timestamp: string };
 
@@ -203,6 +204,7 @@ export default function ChatDock() {
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const { deduct } = useCredits();
 
   // Focus input when opened
   useEffect(() => {
@@ -321,9 +323,20 @@ export default function ChatDock() {
       if (!user) return;
       const path = getChatPath(user.id, manualId);
       const blob = new Blob([payload], { type: 'application/json' });
-      const { error } = await supabase.storage.from('user-manuals').upload(path, blob, { upsert: true, contentType: 'application/json' });
-      if (error) throw error;
-      // ensure user_files entry for pack visibility (optional)
+      // Use remove+insert instead of upsert to avoid requiring UPDATE policy (003 not yet applied)
+      // This avoids 400 "row violates RLS" on second save when file already exists
+      try {
+        await supabase.storage.from('user-manuals').remove([path]);
+      } catch {}
+      const { error } = await supabase.storage.from('user-manuals').upload(path, blob, { upsert: false, contentType: 'application/json' });
+      if (error) {
+        // If remove+insert still fails (e.g. RLS), keep local fallback silently
+        if ((error as any)?.message?.includes('row-level security') || (error as any)?.statusCode === '403') {
+          return;
+        }
+        throw error;
+      }
+      // ensure user_files entry for pack visibility (optional, ignore RLS errors)
       try {
         const { data: existing } = await supabase.from('user_files').select('id').eq('storage_path', path).eq('manual_id', manualId).limit(1).single();
         if (!existing) {
@@ -336,12 +349,15 @@ export default function ChatDock() {
           } as any);
         }
       } catch {}
-    } catch (e) {
+    } catch (e: any) {
+      // Silently keep local fallback - don't spam console with expected RLS fallback
+      if (e?.message?.includes('row-level security') || e?.statusCode === '403') return;
       console.warn('save chat to bucket failed (local fallback kept)', e);
     }
   };
 
   const isLoadingHistoryRef = useRef(false);
+  const skipNextSaveRef = useRef(false);
 
   // Load chat history every time full chat dock is displayed (isOpen) or manual switches
   useEffect(() => {
@@ -351,12 +367,11 @@ export default function ChatDock() {
     }
     // Load when dock is displayed or manual changes - per spec "read them every time full chat dock is displayed"
     if (!isOpen) {
-      // still preload in background so when opened it's instant, but don't show loading spinner
-      // we keep previous messages until open, or clear and load on open? Spec says read every time displayed, so load on open
       return;
     }
     let cancelled = false;
     isLoadingHistoryRef.current = true;
+    skipNextSaveRef.current = true;
     (async () => {
       const history = await loadChatHistory(activeManualId);
       if (cancelled) return;
@@ -366,6 +381,8 @@ export default function ChatDock() {
         setMessages([]);
       }
       isLoadingHistoryRef.current = false;
+      // keep skip flag for one render cycle to avoid immediate re-save of loaded history
+      setTimeout(() => { skipNextSaveRef.current = false; }, 500);
     })();
     return () => { cancelled = true; };
   }, [isOpen, activeManualId]);
@@ -374,6 +391,7 @@ export default function ChatDock() {
   useEffect(() => {
     if (!activeManualId) return;
     if (isLoading || isLoadingHistoryRef.current) return;
+    if (skipNextSaveRef.current) return;
     if (messages.length === 0) return;
     // Debounce slightly to avoid rapid writes during streaming (we already guard isLoading)
     const t = setTimeout(() => {
@@ -392,6 +410,12 @@ export default function ChatDock() {
       const now = new Date().toISOString();
       setMessages((prev) => [...prev, { role: 'user', content: trimmed, timestamp: now } as ChatMessage, { role: 'assistant', content: 'No manual loaded. Please create or open a manual first.', timestamp: now } as ChatMessage]);
       setInput('');
+      return;
+    }
+
+    // Deduct 1 Credit per user message (per spec)
+    const canDeduct = await deduct(1);
+    if (!canDeduct) {
       return;
     }
 
@@ -686,9 +710,6 @@ Keep the same humane, easy-to-understand tone, minimal tech jargon, and basic Ma
               aria-label="Chat input"
             />
           </div>
-          <p className="btn btn-circle btn-ghost shadow-md text-xs font-bold text-gray-600 bg-gray-100 border-[0.5px] border-gray-300 hidden sm:flex">
-            10 CR
-          </p>
           <button
             onClick={(e) => {
               e.stopPropagation();

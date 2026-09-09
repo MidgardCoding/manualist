@@ -322,7 +322,7 @@ export default function MainWorkflow() {
 
     case 'render':
       return (
-        <div className="h-screen flex min-h-screen items-center justify-center">
+        <div className="flex items-center justify-center">
           <aside className="w-80 h-[80vh] sticky top-30 left-6 rounded-lg overflow-y-auto border border-gray-200 bg-base-200 p-4 shrink-0 shadow-2xl">
             <h2 className="text-xl font-bold mb-4">Table of Contents</h2>
             {apiResponse ? <TableOfContents apiResponse={apiResponse} /> : <p className="text-sm opacity-60">No data available</p>}

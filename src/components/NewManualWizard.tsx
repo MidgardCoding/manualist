@@ -3,6 +3,7 @@ import { extractText, getDocumentProxy } from 'unpdf';
 import useTesseract from '../hooks/useTesseract';
 import useDatabase from '../hooks/useDatabase';
 import useManuals from '../hooks/useManuals';
+import useCredits from '../hooks/useCredits';
 import sendPromptToOpenRouter, { sendToDoPrompt } from '../text-generation/OpenRouter';
 import { parseApiResponse } from '../utils/parseApiResponse';
 import { supabase } from '../utils/supabase';
@@ -31,6 +32,7 @@ export default function NewManualWizard({ open, onClose, onCreated }: Props) {
   const { recognize } = useTesseract();
   const { uploadFilesToPack } = useDatabase();
   const { createManual } = useManuals();
+  const { deduct } = useCredits();
 
   const resetAll = useCallback(() => {
     setWizardStep('meta');
@@ -89,6 +91,15 @@ export default function NewManualWizard({ open, onClose, onCreated }: Props) {
         sendPromptToOpenRouter(extracted),
         sendToDoPrompt(extracted),
       ]);
+      // Deduct 1 Credit for new manual (after successful AI generation, before saving pack)
+      const deducted = await deduct(1);
+      if (!deducted) {
+        setGenerating(false);
+        setExtracting(false);
+        setWizardStep('input');
+        return;
+      }
+
       // Compute initial todo_checked for the new pack
       let initialChecked: boolean[] = [];
       try {

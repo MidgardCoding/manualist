@@ -73,9 +73,10 @@ export default function ToDoSteps({ cachedResponse, manualId }: Props) {
     setLoadingChecked(true);
     (async () => {
       try {
+        // Use select('*') to avoid 400 if todo_checked column not yet migrated
         const { data, error } = await supabase
           .from('manuals')
-          .select('todo_checked')
+          .select('*')
           .eq('id', effectiveManualId)
           .single();
 

@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap");
+@plugin "daisyui";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "ABeeZee", sans-serif;
+}
+
+:root {
+  --color-primary: #ffbf00;
+  --color-base-content: oklch(27% 0.046 192.524);
+}
+
+.main-app {
+  width: 100vw;
+  height: 100vh;
+  margin: auto;
+}
+
+li {
+  color: black;
+}
+
+.app-background {
+  background-color: #fffefa; /* Very light creamy yellow */
+  background-image: 
+    /* Main horizontal grid lines */
+    linear-gradient(rgba(251, 248, 232, 0.4) 1px, transparent 1px),
+    /* Main vertical grid lines */
+    linear-gradient(90deg, rgba(251, 248, 232, 0.4) 1px, transparent 1px),
+    /* Subtle helper lines (lower density) */
+    linear-gradient(rgba(253, 251, 240, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(253, 251, 240, 0.2) 1px, transparent 1px);
+
+  background-size:
+    40px 40px,
+    /* Main 40x40px cells */ 40px 40px,
+    /* Main vertical */ 20px 20px,
+    /* Helper 20x20px */ 20px 20px; /* Helper vertical */
+
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Soft shimmer to make the grid feel alive */
+@keyframes grid-twinkle {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Smaller cells on narrow screens */
+@media (max-width: 768px) {
+  .app-background {
+    background-size:
+      30px 30px,
+      30px 30px,
+      15px 15px,
+      15px 15px;
+  }
+}
+
+/* Top status banner marquee (landing page only) */
+@keyframes topbanner-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-topbanner-marquee {
+  animation: topbanner-marquee 60s linear infinite;
+}
+
+/* Out-of-credits modal: lively sway + shine sweep.
+   NOTE: the sweep is transform-based (translateX) — animating `left` is
+   unreliable here and barely visible, so the band is positioned with
+   `left: 0` and moved with translateX percentages of its own width. */
+@keyframes out-of-credits-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg) translateY(0) scale(1);
+  }
+  50% {
+    transform: rotate(2.5deg) translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes out-of-credits-shine {
+  0% {
+    transform: translateX(-130%) skewX(-12deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(260%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes out-of-credits-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.out-of-credits-backdrop {
+  animation: out-of-credits-fade 0.25s ease-out;
+}
+
+.out-of-credits-sway {
+  animation: out-of-credits-sway 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.out-of-credits-shine {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 200, 60, 0) 0%,
+    rgba(255, 214, 110, 0.65) 35%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 214, 110, 0.65) 65%,
+    rgba(255, 200, 60, 0) 100%
+  );
+  filter: blur(1px);
+  animation: out-of-credits-shine 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .out-of-credits-backdrop,
+  .out-of-credits-sway,
+  .out-of-credits-shine {
+    animation: none;
+  }
+}
